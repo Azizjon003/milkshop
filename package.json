@@ -1,0 +1,36 @@
+{
+  "name": "milkshop",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon --exec ts-node src/bot.ts",
+    "build": "tsc",
+    "start": "node dist/bot.js",
+    "db:push": "prisma db push",
+    "db:seed": "ts-node prisma/seed.ts",
+    "db:studio": "prisma studio"
+  },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@grammyjs/conversations": "^2.1.1",
+    "@prisma/client": "^6.19.2",
+    "dotenv": "^17.3.1",
+    "exceljs": "^4.4.0",
+    "grammy": "^1.41.1"
+  },
+  "devDependencies": {
+    "@types/exceljs": "^0.5.3",
+    "@types/node": "^25.5.0",
+    "nodemon": "^3.1.14",
+    "prisma": "^6.19.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.2"
+  }
+}

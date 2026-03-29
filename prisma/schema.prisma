@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// Foydalanuvchilar
+// ==========================================
+model User {
+  id         Int      @id @default(autoincrement())
+  telegramId BigInt   @unique @map("telegram_id")
+  fullName   String   @map("full_name")
+  isSuperAdmin Boolean @default(false) @map("is_super_admin")
+  canIncome    Boolean @default(false) @map("can_income")
+  canExpense   Boolean @default(false) @map("can_expense")
+  canDebt      Boolean @default(false) @map("can_debt")
+  canReport    Boolean @default(false) @map("can_report")
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  incomes          Income[]
+  expenses         Expense[]
+  debtTransactions DebtTransaction[]
+
+  @@map("users")
+}
+
+// ==========================================
+// Kirim turlari
+// ==========================================
+model IncomeType {
+  id   Int    @id @default(autoincrement())
+  name String
+  unit String // 'litr', 'dona', 'kg'
+
+  incomes Income[]
+
+  @@map("income_types")
+}
+
+// ==========================================
+// Kirimlar
+// ==========================================
+model Income {
+  id           Int      @id @default(autoincrement())
+  typeId       Int      @map("type_id")
+  quantity     Decimal  @db.Decimal(10, 2)
+  pricePerUnit Decimal  @map("price_per_unit") @db.Decimal(15, 2)
+  totalAmount  Decimal  @map("total_amount") @db.Decimal(15, 2)
+  comment      String?
+  incomeDate   DateTime @default(now()) @map("income_date") @db.Date
+  createdBy    BigInt   @map("created_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  type IncomeType @relation(fields: [typeId], references: [id])
+  user User      @relation(fields: [createdBy], references: [telegramId])
+
+  @@map("incomes")
+}
+
+// ==========================================
+// Chiqim kategoriyalari
+// ==========================================
+model ExpenseCategory {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  expenses Expense[]
+
+  @@map("expense_categories")
+}
+
+// ==========================================
+// Chiqimlar
+// ==========================================
+model Expense {
+  id          Int      @id @default(autoincrement())
+  categoryId  Int      @map("category_id")
+  amount      Decimal  @db.Decimal(15, 2)
+  comment     String?
+  expenseDate DateTime @default(now()) @map("expense_date") @db.Date
+  createdBy   BigInt   @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  category ExpenseCategory @relation(fields: [categoryId], references: [id])
+  user     User            @relation(fields: [createdBy], references: [telegramId])
+
+  @@map("expenses")
+}
+
+// ==========================================
+// Firmalar
+// ==========================================
+model Firm {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  debtTransactions DebtTransaction[]
+
+  @@map("firms")
+}
+
+// ==========================================
+// Qarz operatsiyalari
+// ==========================================
+model DebtTransaction {
+  id              Int      @id @default(autoincrement())
+  firmId          Int      @map("firm_id")
+  type            DebtType
+  amount          Decimal  @db.Decimal(15, 2)
+  comment         String?
+  transactionDate DateTime @default(now()) @map("transaction_date") @db.Date
+  createdBy       BigInt   @map("created_by")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  firm Firm @relation(fields: [firmId], references: [id])
+  user User @relation(fields: [createdBy], references: [telegramId])
+
+  @@map("debt_transactions")
+}
+
+enum DebtType {
+  DEBT    // biz qarz berdik
+  PAYMENT // firma qaytardi
+}
