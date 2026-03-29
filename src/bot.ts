@@ -24,6 +24,26 @@ bot.use(
 
 // Conversations plugin
 bot.use(conversations());
+
+// Menyu tugmalari bosilganda aktiv conversationni to'xtatish
+// (createConversation dan OLDIN bo'lishi kerak)
+const menuButtons = [
+  "💰 Kirim qo'shish",
+  "📤 Chiqim qo'shish",
+  "📋 Qarzlar",
+  "📊 Balans",
+  "📈 Hisobotlar",
+  "⚙️ Admin panel",
+  "🏠 Bosh menyu",
+];
+bot.use(async (ctx, next) => {
+  const text = ctx.message?.text;
+  if (text && (text === "/start" || menuButtons.includes(text))) {
+    await ctx.conversation.exitAll();
+  }
+  await next();
+});
+
 bot.use(createConversation(incomeConversation));
 bot.use(createConversation(expenseConversation));
 bot.use(createConversation(debtConversation));
