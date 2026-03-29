@@ -57,33 +57,33 @@ export async function incomeConversation(
       break;
     }
 
-    // 3. Summa
-    await ctx.reply("💰 Summa kiriting:");
+    // 3. 1 dona/kg/litr narxi
+    await ctx.reply(`💵 1 ${incomeType.unit} narxini kiriting:`);
 
-    let totalAmount: number;
+    let pricePerUnit: number;
     while (true) {
-      const amountCtx = await conversation.waitFor("message:text");
-      if (amountCtx.message.text === "❌ Bekor qilish") {
+      const priceCtx = await conversation.waitFor("message:text");
+      if (priceCtx.message.text === "❌ Bekor qilish") {
         const menu = await conversation.external(() => getMainMenuForUser(ctx.from!.id));
         await ctx.reply("❌ Bekor qilindi.", { reply_markup: menu });
         return;
       }
-      totalAmount = parseFloat(amountCtx.message.text);
-      if (isNaN(totalAmount) || totalAmount <= 0) {
-        await ctx.reply("⚠️ Iltimos, to'g'ri summa kiriting:");
+      pricePerUnit = parseFloat(priceCtx.message.text);
+      if (isNaN(pricePerUnit) || pricePerUnit <= 0) {
+        await ctx.reply("⚠️ Iltimos, to'g'ri narx kiriting:");
         continue;
       }
       break;
     }
 
-    const pricePerUnit = totalAmount / quantity;
+    const totalAmount = quantity * pricePerUnit;
 
     const summary =
       `📋 Kirim ma'lumotlari:\n\n` +
       `📦 Turi: ${incomeType.name}\n` +
       `📊 Miqdor: ${quantity} ${incomeType.unit}\n` +
-      `💰 Summa: ${totalAmount.toLocaleString()} so'm\n` +
-      `💵 Narx (1 ${incomeType.unit}): ${Math.round(pricePerUnit).toLocaleString()} so'm`;
+      `💵 Narx (1 ${incomeType.unit}): ${pricePerUnit.toLocaleString()} so'm\n` +
+      `💰 Jami: ${totalAmount.toLocaleString()} so'm`;
 
     await ctx.reply(summary);
 
