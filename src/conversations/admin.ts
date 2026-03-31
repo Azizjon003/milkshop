@@ -1,7 +1,7 @@
 import { InlineKeyboard, Keyboard } from "grammy";
 import { MyContext, MyConversation } from "../types";
 import { prisma } from "../prisma";
-import { getMainMenuForUser, cancelKeyboard } from "../keyboards/main";
+import { getMainMenuForUser, getCancelKeyboard } from "../keyboards/main";
 
 const adminMenuKeyboard = new InlineKeyboard()
   .text("📦 Kirim turlari", "admin_income")
@@ -102,7 +102,7 @@ export async function adminConversation(
 
     if (section === "income") {
       await ctx.reply("📦 Yangi kirim turi nomini kiriting:", {
-        reply_markup: cancelKeyboard,
+        reply_markup: getCancelKeyboard("uz"),
       });
 
       const nameCtx = await conversation.waitFor("message:text");
@@ -137,7 +137,7 @@ export async function adminConversation(
       });
     } else if (section === "expense") {
       await ctx.reply("📂 Yangi chiqim kategoriyasi nomini kiriting:", {
-        reply_markup: cancelKeyboard,
+        reply_markup: getCancelKeyboard("uz"),
       });
 
       const nameCtx = await conversation.waitFor("message:text");
@@ -155,7 +155,7 @@ export async function adminConversation(
       });
     } else {
       await ctx.reply("🏢 Yangi firma nomini kiriting:", {
-        reply_markup: cancelKeyboard,
+        reply_markup: getCancelKeyboard("uz"),
       });
 
       const nameCtx = await conversation.waitFor("message:text");
@@ -314,7 +314,7 @@ async function handleUsers(
     await userCtx.editMessageText("➕ Yangi foydalanuvchi qo'shish");
 
     await ctx.reply("📱 Telegram ID kiriting:", {
-      reply_markup: cancelKeyboard,
+      reply_markup: getCancelKeyboard("uz"),
     });
 
     let telegramId: bigint;

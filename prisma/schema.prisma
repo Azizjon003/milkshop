@@ -19,6 +19,7 @@ model User {
   canExpense   Boolean @default(false) @map("can_expense")
   canDebt      Boolean @default(false) @map("can_debt")
   canReport    Boolean @default(false) @map("can_report")
+  language     String  @default("uz") @map("language") // 'uz' | 'ru' | 'tj'
   isActive   Boolean  @default(true) @map("is_active")
   createdAt  DateTime @default(now()) @map("created_at")
 

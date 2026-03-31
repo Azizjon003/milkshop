@@ -3,74 +3,77 @@ import { prisma } from "../prisma";
 import {
   getIncomeTypesKeyboard,
   getMainMenuForUser,
-  addMoreKeyboard,
-  cancelKeyboard,
+  getAddMoreKeyboard,
+  getCancelKeyboard,
 } from "../keyboards/main";
+import { t, Lang } from "../i18n";
 
 export async function incomeConversation(
   conversation: MyConversation,
   ctx: MyContext
 ) {
+  const lang = await conversation.external(async () => {
+    const u = await prisma.user.findUnique({ where: { telegramId: BigInt(ctx.from!.id) } });
+    return (u?.language as Lang) || "uz";
+  });
+
   let addMore = true;
 
   while (addMore) {
-    // 1. Kirim turini tanlash
     const incomeTypesKb = await conversation.external(() => getIncomeTypesKeyboard());
-    await ctx.reply("📦 Kirim turini tanlang:", {
-      reply_markup: incomeTypesKb,
-    });
+    await ctx.reply(t("incomeSelectType", lang), { reply_markup: incomeTypesKb });
 
     const typeCtx = await conversation.waitForCallbackQuery(/^income_\d+$/);
     const typeId = parseInt(typeCtx.callbackQuery.data.split("_")[1]);
     await typeCtx.answerCallbackQuery();
 
     const incomeType = await conversation.external(async () => {
-      const t = await prisma.incomeType.findUnique({ where: { id: typeId } });
-      return t ? { id: t.id, name: t.name, unit: t.unit } : null;
+      const tp = await prisma.incomeType.findUnique({ where: { id: typeId } });
+      return tp ? { id: tp.id, name: tp.name, unit: tp.unit } : null;
     });
 
     if (!incomeType) {
-      await ctx.reply("❌ Tur topilmadi!");
+      await ctx.reply(t("typeNotFound", lang));
       return;
     }
 
-    await typeCtx.editMessageText(`✅ Tanlandi: ${incomeType.name}`);
+    await typeCtx.editMessageText(t("incomeSelected", lang, { name: incomeType.name }));
 
-    // 2. Miqdor
-    await ctx.reply(`📊 Miqdor kiriting (${incomeType.unit}):`, {
-      reply_markup: cancelKeyboard,
+    // Miqdor
+    await ctx.reply(t("incomeEnterQty", lang, { unit: incomeType.unit }), {
+      reply_markup: getCancelKeyboard(lang),
     });
 
     let quantity: number;
     while (true) {
       const qtyCtx = await conversation.waitFor("message:text");
-      if (qtyCtx.message.text === "❌ Bekor qilish") {
+      if (qtyCtx.message.text === t("cancel", lang)) {
         const menu = await conversation.external(() => getMainMenuForUser(ctx.from!.id));
-        await ctx.reply("❌ Bekor qilindi.", { reply_markup: menu });
+        await ctx.reply(t("cancelled", lang), { reply_markup: menu });
         return;
       }
       quantity = parseFloat(qtyCtx.message.text);
       if (isNaN(quantity) || quantity <= 0) {
-        await ctx.reply("⚠️ Iltimos, to'g'ri son kiriting:");
+        await ctx.reply(t("invalidNumber", lang));
         continue;
       }
       break;
     }
 
-    // 3. 1 dona/kg/litr narxi
-    await ctx.reply(`💵 1 ${incomeType.unit} narxini kiriting:`);
+    // Narx
+    await ctx.reply(t("incomeEnterPrice", lang, { unit: incomeType.unit }));
 
     let pricePerUnit: number;
     while (true) {
       const priceCtx = await conversation.waitFor("message:text");
-      if (priceCtx.message.text === "❌ Bekor qilish") {
+      if (priceCtx.message.text === t("cancel", lang)) {
         const menu = await conversation.external(() => getMainMenuForUser(ctx.from!.id));
-        await ctx.reply("❌ Bekor qilindi.", { reply_markup: menu });
+        await ctx.reply(t("cancelled", lang), { reply_markup: menu });
         return;
       }
       pricePerUnit = parseFloat(priceCtx.message.text);
       if (isNaN(pricePerUnit) || pricePerUnit <= 0) {
-        await ctx.reply("⚠️ Iltimos, to'g'ri narx kiriting:");
+        await ctx.reply(t("invalidNumber", lang));
         continue;
       }
       break;
@@ -78,14 +81,15 @@ export async function incomeConversation(
 
     const totalAmount = quantity * pricePerUnit;
 
-    const summary =
-      `📋 Kirim ma'lumotlari:\n\n` +
-      `📦 Turi: ${incomeType.name}\n` +
-      `📊 Miqdor: ${quantity} ${incomeType.unit}\n` +
-      `💵 Narx (1 ${incomeType.unit}): ${pricePerUnit.toLocaleString()} so'm\n` +
-      `💰 Jami: ${totalAmount.toLocaleString()} so'm`;
-
-    await ctx.reply(summary);
+    await ctx.reply(
+      t("incomeSummary", lang, {
+        type: incomeType.name,
+        qty: quantity,
+        unit: incomeType.unit,
+        price: pricePerUnit.toLocaleString(),
+        total: totalAmount.toLocaleString(),
+      })
+    );
 
     await conversation.external(async () => {
       await prisma.income.create({
@@ -100,21 +104,19 @@ export async function incomeConversation(
       });
     });
 
-    await ctx.reply("✅ Kirim saqlandi! Yana qo'shasizmi?", {
-      reply_markup: addMoreKeyboard,
-    });
+    await ctx.reply(t("incomeSaved", lang), { reply_markup: getAddMoreKeyboard(lang) });
 
     const moreCtx = await conversation.waitForCallbackQuery(/^more_(yes|no)$/);
     await moreCtx.answerCallbackQuery();
 
     if (moreCtx.callbackQuery.data === "more_no") {
       addMore = false;
-      await moreCtx.editMessageText("✅ Kirimlar saqlandi!");
+      await moreCtx.editMessageText(t("incomeAllSaved", lang));
     } else {
-      await moreCtx.editMessageText("✅ Saqlandi. Keyingisi...");
+      await moreCtx.editMessageText(t("incomeSavedNext", lang));
     }
   }
 
   const menu = await conversation.external(() => getMainMenuForUser(ctx.from!.id));
-  await ctx.reply("🏠 Asosiy menyu:", { reply_markup: menu });
+  await ctx.reply(t("mainMenu", lang), { reply_markup: menu });
 }

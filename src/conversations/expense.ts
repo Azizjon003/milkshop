@@ -3,22 +3,25 @@ import { prisma } from "../prisma";
 import {
   getExpenseCategoriesKeyboard,
   getMainMenuForUser,
-  addMoreKeyboard,
-  cancelKeyboard,
+  getAddMoreKeyboard,
+  getCancelKeyboard,
 } from "../keyboards/main";
+import { t, Lang } from "../i18n";
 
 export async function expenseConversation(
   conversation: MyConversation,
   ctx: MyContext
 ) {
+  const lang = await conversation.external(async () => {
+    const u = await prisma.user.findUnique({ where: { telegramId: BigInt(ctx.from!.id) } });
+    return (u?.language as Lang) || "uz";
+  });
+
   let addMore = true;
 
   while (addMore) {
-    // 1. Kategoriya tanlash
     const expenseCatsKb = await conversation.external(() => getExpenseCategoriesKeyboard());
-    await ctx.reply("📂 Chiqim kategoriyasini tanlang:", {
-      reply_markup: expenseCatsKb,
-    });
+    await ctx.reply(t("expenseSelectCat", lang), { reply_markup: expenseCatsKb });
 
     const catCtx = await conversation.waitForCallbackQuery(/^expense_\d+$/);
     const categoryId = parseInt(catCtx.callbackQuery.data.split("_")[1]);
@@ -30,52 +33,49 @@ export async function expenseConversation(
     });
 
     if (!category) {
-      await ctx.reply("❌ Kategoriya topilmadi!");
+      await ctx.reply(t("catNotFound", lang));
       return;
     }
 
-    await catCtx.editMessageText(`✅ Tanlandi: ${category.name}`);
+    await catCtx.editMessageText(t("incomeSelected", lang, { name: category.name }));
 
-    // 2. Summa
-    await ctx.reply("💰 Summa kiriting:", {
-      reply_markup: cancelKeyboard,
-    });
+    // Summa
+    await ctx.reply(t("expenseEnterAmount", lang), { reply_markup: getCancelKeyboard(lang) });
 
     let amount: number;
     while (true) {
       const amountCtx = await conversation.waitFor("message:text");
-      if (amountCtx.message.text === "❌ Bekor qilish") {
+      if (amountCtx.message.text === t("cancel", lang)) {
         const menu = await conversation.external(() => getMainMenuForUser(ctx.from!.id));
-        await ctx.reply("❌ Bekor qilindi.", { reply_markup: menu });
+        await ctx.reply(t("cancelled", lang), { reply_markup: menu });
         return;
       }
       amount = parseFloat(amountCtx.message.text);
       if (isNaN(amount) || amount <= 0) {
-        await ctx.reply("⚠️ Iltimos, to'g'ri summa kiriting:");
+        await ctx.reply(t("invalidNumber", lang));
         continue;
       }
       break;
     }
 
-    // 3. Izoh
-    await ctx.reply("📝 Izoh kiriting (yoki - bosing):");
+    // Izoh
+    await ctx.reply(t("expenseEnterComment", lang));
 
     const commentCtx = await conversation.waitFor("message:text");
-    if (commentCtx.message.text === "❌ Bekor qilish") {
+    if (commentCtx.message.text === t("cancel", lang)) {
       const menu = await conversation.external(() => getMainMenuForUser(ctx.from!.id));
-      await ctx.reply("❌ Bekor qilindi.", { reply_markup: menu });
+      await ctx.reply(t("cancelled", lang), { reply_markup: menu });
       return;
     }
-    const comment =
-      commentCtx.message.text === "-" ? null : commentCtx.message.text;
+    const comment = commentCtx.message.text === "-" ? null : commentCtx.message.text;
 
-    const summary =
-      `📋 Chiqim ma'lumotlari:\n\n` +
-      `📂 Kategoriya: ${category.name}\n` +
-      `💰 Summa: ${amount.toLocaleString()} so'm\n` +
-      `📝 Izoh: ${comment || "—"}`;
-
-    await ctx.reply(summary);
+    await ctx.reply(
+      t("expenseSummary", lang, {
+        category: category.name,
+        amount: amount.toLocaleString(),
+        comment: comment || "—",
+      })
+    );
 
     await conversation.external(async () => {
       await prisma.expense.create({
@@ -89,21 +89,19 @@ export async function expenseConversation(
       });
     });
 
-    await ctx.reply("✅ Chiqim saqlandi! Yana qo'shasizmi?", {
-      reply_markup: addMoreKeyboard,
-    });
+    await ctx.reply(t("expenseSaved", lang), { reply_markup: getAddMoreKeyboard(lang) });
 
     const moreCtx = await conversation.waitForCallbackQuery(/^more_(yes|no)$/);
     await moreCtx.answerCallbackQuery();
 
     if (moreCtx.callbackQuery.data === "more_no") {
       addMore = false;
-      await moreCtx.editMessageText("✅ Chiqimlar saqlandi!");
+      await moreCtx.editMessageText(t("expenseAllSaved", lang));
     } else {
-      await moreCtx.editMessageText("✅ Saqlandi. Keyingisi...");
+      await moreCtx.editMessageText(t("incomeSavedNext", lang));
     }
   }
 
   const menu = await conversation.external(() => getMainMenuForUser(ctx.from!.id));
-  await ctx.reply("🏠 Asosiy menyu:", { reply_markup: menu });
+  await ctx.reply(t("mainMenu", lang), { reply_markup: menu });
 }

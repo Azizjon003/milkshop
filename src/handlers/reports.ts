@@ -3,59 +3,53 @@ import { MyContext } from "../types";
 import { prisma } from "../prisma";
 import { getMainMenuForUser } from "../keyboards/main";
 import { generateReport } from "../utils/excel";
+import { t, getUserLang } from "../i18n";
 import fs from "fs";
 
 const composer = new Composer<MyContext>();
 
-// @db.Date UTC midnight saqlaydi, shuning uchun UTC ishlatish kerak
 function todayUTC(): Date {
   const now = new Date();
   return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
 }
-
 function tomorrowUTC(): Date {
   const d = todayUTC();
   d.setUTCDate(d.getUTCDate() + 1);
   return d;
 }
-
 function startOfMonthUTC(): Date {
   const now = new Date();
   return new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
 }
-
 function startOfNextMonthUTC(): Date {
   const now = new Date();
   return new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 1));
 }
 
-const reportsKeyboard = new InlineKeyboard()
-  .text("📅 Bugungi", "report_today")
-  .text("📆 Oylik", "report_monthly")
-  .row()
-  .text("💰 Kirim (turi bo'yicha)", "report_income")
-  .row()
-  .text("📤 Chiqim (kategoriya)", "report_expense")
-  .row()
-  .text("📋 Qarz holati", "report_debt")
-  .row()
-  .text("📥 Excel: Oylik", "excel_monthly")
-  .text("📥 Excel: Umumiy", "excel_all")
-  .row()
-  .text("📥 Excel: Sana bo'yicha", "excel_range");
+composer.hears(/^📈 /, async (ctx) => {
+  const lang = await getUserLang(ctx.from!.id);
+  const kb = new InlineKeyboard()
+    .text(t("reportToday", lang), "report_today")
+    .text(t("reportMonthly", lang), "report_monthly")
+    .row()
+    .text(t("reportByIncome", lang), "report_income")
+    .row()
+    .text(t("reportByExpense", lang), "report_expense")
+    .row()
+    .text(t("reportDebtStatus", lang), "report_debt")
+    .row()
+    .text(t("excelMonthly", lang), "excel_monthly")
+    .text(t("excelAll", lang), "excel_all")
+    .row()
+    .text(t("excelRange", lang), "excel_range");
 
-composer.hears("📈 Hisobotlar", async (ctx) => {
-  await ctx.reply("📈 Hisobot turini tanlang:", {
-    reply_markup: reportsKeyboard,
-  });
+  await ctx.reply(t("reportsTitle", lang), { reply_markup: kb });
 });
 
-// ========== TEXT HISOBOTLAR ==========
-
-// Bugungi hisobot
+// Bugungi
 composer.callbackQuery("report_today", async (ctx) => {
   await ctx.answerCallbackQuery();
-
+  const lang = await getUserLang(ctx.from!.id);
   const today = todayUTC();
   const tomorrow = tomorrowUTC();
 
@@ -63,7 +57,6 @@ composer.callbackQuery("report_today", async (ctx) => {
     where: { incomeDate: { gte: today, lt: tomorrow } },
     include: { type: true },
   });
-
   const expenses = await prisma.expense.findMany({
     where: { expenseDate: { gte: today, lt: tomorrow } },
     include: { category: true },
@@ -74,7 +67,7 @@ composer.callbackQuery("report_today", async (ctx) => {
   for (const i of incomes) {
     const amt = Number(i.totalAmount);
     incomeTotal += amt;
-    incomeText += `  ${i.type.name}: ${Number(i.quantity)} ${i.type.unit} — ${amt.toLocaleString()} so'm\n`;
+    incomeText += `  ${i.type.name}: ${Number(i.quantity)} ${i.type.unit} — ${amt.toLocaleString()}\n`;
   }
 
   let expenseTotal = 0;
@@ -82,26 +75,25 @@ composer.callbackQuery("report_today", async (ctx) => {
   for (const e of expenses) {
     const amt = Number(e.amount);
     expenseTotal += amt;
-    expenseText += `  ${e.category.name}: ${amt.toLocaleString()} so'm\n`;
+    expenseText += `  ${e.category.name}: ${amt.toLocaleString()}\n`;
   }
 
   const text =
-    `📅 Bugungi hisobot:\n` +
+    `${t("reportToday", lang)}:\n━━━━━━━━━━━━━━━━━━\n` +
+    `💰:\n${incomeText || t("noData", lang) + "\n"}` +
+    `${t("total", lang)}: ${incomeTotal.toLocaleString()}\n\n` +
+    `📤:\n${expenseText || t("noData", lang) + "\n"}` +
+    `${t("total", lang)}: ${expenseTotal.toLocaleString()}\n` +
     `━━━━━━━━━━━━━━━━━━\n` +
-    `💰 Kirimlar:\n${incomeText || "  — yo'q\n"}` +
-    `Jami: ${incomeTotal.toLocaleString()} so'm\n\n` +
-    `📤 Chiqimlar:\n${expenseText || "  — yo'q\n"}` +
-    `Jami: ${expenseTotal.toLocaleString()} so'm\n` +
-    `━━━━━━━━━━━━━━━━━━\n` +
-    `💵 Foyda: ${(incomeTotal - expenseTotal).toLocaleString()} so'm`;
+    `${t("profit", lang)}: ${(incomeTotal - expenseTotal).toLocaleString()}`;
 
   await ctx.reply(text, { reply_markup: await getMainMenuForUser(ctx.from!.id) });
 });
 
-// Oylik hisobot
+// Oylik
 composer.callbackQuery("report_monthly", async (ctx) => {
   await ctx.answerCallbackQuery();
-
+  const lang = await getUserLang(ctx.from!.id);
   const from = startOfMonthUTC();
   const to = startOfNextMonthUTC();
 
@@ -109,7 +101,6 @@ composer.callbackQuery("report_monthly", async (ctx) => {
     where: { incomeDate: { gte: from, lt: to } },
     _sum: { totalAmount: true },
   });
-
   const expenseAgg = await prisma.expense.aggregate({
     where: { expenseDate: { gte: from, lt: to } },
     _sum: { amount: true },
@@ -122,14 +113,14 @@ composer.callbackQuery("report_monthly", async (ctx) => {
     "Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun",
     "Iyul", "Avgust", "Sentabr", "Oktabr", "Noyabr", "Dekabr",
   ];
+  const now = new Date();
 
   const text =
-    `📆 ${monthNames[new Date().getMonth()]} ${new Date().getFullYear()} hisoboti:\n` +
+    `📆 ${monthNames[now.getMonth()]} ${now.getFullYear()}:\n━━━━━━━━━━━━━━━━━━\n` +
+    `💰 ${t("total", lang)}: ${income.toLocaleString()}\n` +
+    `📤 ${t("total", lang)}: ${expense.toLocaleString()}\n` +
     `━━━━━━━━━━━━━━━━━━\n` +
-    `💰 Jami kirim: ${income.toLocaleString()} so'm\n` +
-    `📤 Jami chiqim: ${expense.toLocaleString()} so'm\n` +
-    `━━━━━━━━━━━━━━━━━━\n` +
-    `💵 Foyda: ${(income - expense).toLocaleString()} so'm`;
+    `${t("profit", lang)}: ${(income - expense).toLocaleString()}`;
 
   await ctx.reply(text, { reply_markup: await getMainMenuForUser(ctx.from!.id) });
 });
@@ -137,64 +128,63 @@ composer.callbackQuery("report_monthly", async (ctx) => {
 // Kirim turi bo'yicha
 composer.callbackQuery("report_income", async (ctx) => {
   await ctx.answerCallbackQuery();
+  const lang = await getUserLang(ctx.from!.id);
 
   const results = await prisma.income.groupBy({
     by: ["typeId"],
     _sum: { totalAmount: true, quantity: true },
   });
-
   const types = await prisma.incomeType.findMany();
-  const typeMap = new Map(types.map((t) => [t.id, t]));
+  const typeMap = new Map(types.map((tp) => [tp.id, tp]));
 
-  let text = "💰 Kirim (turi bo'yicha):\n━━━━━━━━━━━━━━━━━━\n";
+  let text = `${t("reportByIncome", lang)}:\n━━━━━━━━━━━━━━━━━━\n`;
   let total = 0;
 
   for (const r of results) {
-    const type = typeMap.get(r.typeId);
+    const tp = typeMap.get(r.typeId);
     const sum = Number(r._sum.totalAmount) || 0;
     const qty = Number(r._sum.quantity) || 0;
     total += sum;
-    text += `${type?.name}: ${qty} ${type?.unit} — ${sum.toLocaleString()} so'm\n`;
+    text += `${tp?.name}: ${qty} ${tp?.unit} — ${sum.toLocaleString()}\n`;
   }
 
-  text += `━━━━━━━━━━━━━━━━━━\nJami: ${total.toLocaleString()} so'm`;
-
+  text += `━━━━━━━━━━━━━━━━━━\n${t("total", lang)}: ${total.toLocaleString()}`;
   await ctx.reply(text, { reply_markup: await getMainMenuForUser(ctx.from!.id) });
 });
 
 // Chiqim kategoriya bo'yicha
 composer.callbackQuery("report_expense", async (ctx) => {
   await ctx.answerCallbackQuery();
+  const lang = await getUserLang(ctx.from!.id);
 
   const results = await prisma.expense.groupBy({
     by: ["categoryId"],
     _sum: { amount: true },
   });
-
   const categories = await prisma.expenseCategory.findMany();
   const catMap = new Map(categories.map((c) => [c.id, c]));
 
-  let text = "📤 Chiqim (kategoriya bo'yicha):\n━━━━━━━━━━━━━━━━━━\n";
+  let text = `${t("reportByExpense", lang)}:\n━━━━━━━━━━━━━━━━━━\n`;
   let total = 0;
 
   for (const r of results) {
     const cat = catMap.get(r.categoryId);
     const sum = Number(r._sum.amount) || 0;
     total += sum;
-    text += `${cat?.name}: ${sum.toLocaleString()} so'm\n`;
+    text += `${cat?.name}: ${sum.toLocaleString()}\n`;
   }
 
-  text += `━━━━━━━━━━━━━━━━━━\nJami: ${total.toLocaleString()} so'm`;
-
+  text += `━━━━━━━━━━━━━━━━━━\n${t("total", lang)}: ${total.toLocaleString()}`;
   await ctx.reply(text, { reply_markup: await getMainMenuForUser(ctx.from!.id) });
 });
 
 // Qarz holati
 composer.callbackQuery("report_debt", async (ctx) => {
   await ctx.answerCallbackQuery();
+  const lang = await getUserLang(ctx.from!.id);
 
   const firms = await prisma.firm.findMany();
-  let text = "📋 Firmalar qarz holati:\n━━━━━━━━━━━━━━━━━━\n";
+  let text = `${t("reportDebtStatus", lang)}:\n━━━━━━━━━━━━━━━━━━\n`;
   let grandTotal = 0;
 
   for (const firm of firms) {
@@ -203,7 +193,6 @@ composer.callbackQuery("report_debt", async (ctx) => {
       where: { firmId: firm.id },
       _sum: { amount: true },
     });
-
     let debts = 0;
     let payments = 0;
     for (const r of result) {
@@ -211,47 +200,38 @@ composer.callbackQuery("report_debt", async (ctx) => {
       if (r.type === "DEBT") debts = sum;
       if (r.type === "PAYMENT") payments = sum;
     }
-
     const balance = debts - payments;
     grandTotal += balance;
-
     if (balance !== 0) {
-      text += `${firm.name}: ${balance.toLocaleString()} so'm\n`;
+      text += `${firm.name}: ${balance.toLocaleString()}\n`;
     }
   }
 
-  if (grandTotal === 0) {
-    text += "Qarz yo'q ✅\n";
-  }
-
-  text += `━━━━━━━━━━━━━━━━━━\nJami qarz: ${grandTotal.toLocaleString()} so'm`;
+  if (grandTotal === 0) text += t("noDebt", lang) + "\n";
+  text += `━━━━━━━━━━━━━━━━━━\n${t("totalDebt", lang)}: ${grandTotal.toLocaleString()}`;
 
   await ctx.reply(text, { reply_markup: await getMainMenuForUser(ctx.from!.id) });
 });
 
-// ========== EXCEL HISOBOTLAR ==========
-
+// Excel
 async function sendExcel(ctx: MyContext, filter: { from?: Date; to?: Date }, label: string) {
-  await ctx.reply(`⏳ ${label} tayyorlanmoqda...`);
-
+  const lang = await getUserLang(ctx.from!.id);
+  await ctx.reply(t("excelPreparing", lang, { label }));
   try {
     const filePath = await generateReport(filter);
     await ctx.replyWithDocument(new InputFile(filePath, `${label}.xlsx`));
     fs.unlinkSync(filePath);
   } catch (err) {
     console.error("Excel xatosi:", err);
-    await ctx.reply("❌ Excel yaratishda xatolik yuz berdi.");
+    await ctx.reply(t("excelError", lang));
   }
-
-  await ctx.reply("🏠 Asosiy menyu:", { reply_markup: await getMainMenuForUser(ctx.from!.id) });
+  await ctx.reply(t("mainMenu", lang), { reply_markup: await getMainMenuForUser(ctx.from!.id) });
 }
 
-// Excel: Oylik
 composer.callbackQuery("excel_monthly", async (ctx) => {
   await ctx.answerCallbackQuery();
   const from = startOfMonthUTC();
   const to = startOfNextMonthUTC();
-
   const monthNames = [
     "Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun",
     "Iyul", "Avgust", "Sentabr", "Oktabr", "Noyabr", "Dekabr",
@@ -260,13 +240,11 @@ composer.callbackQuery("excel_monthly", async (ctx) => {
   await sendExcel(ctx, { from, to }, `${monthNames[now.getMonth()]}_${now.getFullYear()}`);
 });
 
-// Excel: Umumiy
 composer.callbackQuery("excel_all", async (ctx) => {
   await ctx.answerCallbackQuery();
   await sendExcel(ctx, {}, "Umumiy_hisobot");
 });
 
-// Excel: Sana bo'yicha — conversation ga yo'naltirish
 composer.callbackQuery("excel_range", async (ctx) => {
   await ctx.answerCallbackQuery();
   await ctx.conversation.enter("excelRangeConversation");

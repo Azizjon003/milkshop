@@ -3,10 +3,11 @@ import { prisma } from "../prisma";
 import {
   getFirmsKeyboard,
   getMainMenuForUser,
-  debtTypeKeyboard,
-  addMoreKeyboard,
-  cancelKeyboard,
+  getDebtTypeKeyboard,
+  getAddMoreKeyboard,
+  getCancelKeyboard,
 } from "../keyboards/main";
+import { t, Lang } from "../i18n";
 
 async function getFirmBalance(firmId: number): Promise<number> {
   const result = await prisma.debtTransaction.groupBy({
@@ -14,16 +15,13 @@ async function getFirmBalance(firmId: number): Promise<number> {
     where: { firmId },
     _sum: { amount: true },
   });
-
   let debts = 0;
   let payments = 0;
-
   for (const r of result) {
     const sum = Number(r._sum.amount) || 0;
     if (r.type === "DEBT") debts = sum;
     if (r.type === "PAYMENT") payments = sum;
   }
-
   return debts - payments;
 }
 
@@ -31,14 +29,16 @@ export async function debtConversation(
   conversation: MyConversation,
   ctx: MyContext
 ) {
+  const lang = await conversation.external(async () => {
+    const u = await prisma.user.findUnique({ where: { telegramId: BigInt(ctx.from!.id) } });
+    return (u?.language as Lang) || "uz";
+  });
+
   let addMore = true;
 
   while (addMore) {
-    // 1. Firma tanlash
     const firmsKb = await conversation.external(() => getFirmsKeyboard());
-    await ctx.reply("🏢 Firmani tanlang:", {
-      reply_markup: firmsKb,
-    });
+    await ctx.reply(t("debtSelectFirm", lang), { reply_markup: firmsKb });
 
     const firmCtx = await conversation.waitForCallbackQuery(/^firm_\d+$/);
     const firmId = parseInt(firmCtx.callbackQuery.data.split("_")[1]);
@@ -50,64 +50,53 @@ export async function debtConversation(
     });
 
     if (!firm) {
-      await ctx.reply("❌ Firma topilmadi!");
+      await ctx.reply(t("firmNotFound", lang));
       return;
     }
 
     const balance = await conversation.external(() => getFirmBalance(firmId));
-
     await firmCtx.editMessageText(
-      `🏢 ${firm.name}\n💰 Qarz qoldig'i: ${balance.toLocaleString()} so'm`
+      t("debtBalance", lang, { name: firm.name, balance: balance.toLocaleString() })
     );
 
-    // 2. Qarz turi
-    await ctx.reply("Nima qilasiz?", {
-      reply_markup: debtTypeKeyboard,
-    });
+    await ctx.reply(t("debtChooseAction", lang), { reply_markup: getDebtTypeKeyboard(lang) });
 
-    const typeCtx = await conversation.waitForCallbackQuery(
-      /^debt_(add|pay)$/
-    );
+    const typeCtx = await conversation.waitForCallbackQuery(/^debt_(add|pay)$/);
     const debtType = typeCtx.callbackQuery.data === "debt_add" ? "DEBT" : "PAYMENT";
-    const debtLabel =
-      debtType === "DEBT" ? "➕ Qarz qo'shish" : "➖ Qarz to'lash";
+    const debtLabel = debtType === "DEBT" ? t("debtAdd", lang) : t("debtPay", lang);
     await typeCtx.answerCallbackQuery();
     await typeCtx.editMessageText(`✅ ${debtLabel}`);
 
-    // 3. Summa
-    await ctx.reply("💰 Summa kiriting:", {
-      reply_markup: cancelKeyboard,
-    });
+    // Summa
+    await ctx.reply(t("expenseEnterAmount", lang), { reply_markup: getCancelKeyboard(lang) });
 
     let amount: number;
     while (true) {
       const amountCtx = await conversation.waitFor("message:text");
-      if (amountCtx.message.text === "❌ Bekor qilish") {
+      if (amountCtx.message.text === t("cancel", lang)) {
         const menu = await conversation.external(() => getMainMenuForUser(ctx.from!.id));
-        await ctx.reply("❌ Bekor qilindi.", { reply_markup: menu });
+        await ctx.reply(t("cancelled", lang), { reply_markup: menu });
         return;
       }
       amount = parseFloat(amountCtx.message.text);
       if (isNaN(amount) || amount <= 0) {
-        await ctx.reply("⚠️ Iltimos, to'g'ri summa kiriting:");
+        await ctx.reply(t("invalidNumber", lang));
         continue;
       }
       break;
     }
 
-    // 4. Izoh
-    await ctx.reply("📝 Izoh kiriting (yoki - bosing):");
+    // Izoh
+    await ctx.reply(t("expenseEnterComment", lang));
 
     const commentCtx = await conversation.waitFor("message:text");
-    if (commentCtx.message.text === "❌ Bekor qilish") {
+    if (commentCtx.message.text === t("cancel", lang)) {
       const menu = await conversation.external(() => getMainMenuForUser(ctx.from!.id));
-      await ctx.reply("❌ Bekor qilindi.", { reply_markup: menu });
+      await ctx.reply(t("cancelled", lang), { reply_markup: menu });
       return;
     }
-    const comment =
-      commentCtx.message.text === "-" ? null : commentCtx.message.text;
+    const comment = commentCtx.message.text === "-" ? null : commentCtx.message.text;
 
-    // Saqlash
     await conversation.external(async () => {
       await prisma.debtTransaction.create({
         data: {
@@ -123,32 +112,29 @@ export async function debtConversation(
 
     const newBalance = await conversation.external(() => getFirmBalance(firmId));
 
-    const summary =
-      `📋 Qarz ma'lumotlari:\n\n` +
-      `🏢 Firma: ${firm.name}\n` +
-      `📌 Turi: ${debtLabel}\n` +
-      `💰 Summa: ${amount.toLocaleString()} so'm\n` +
-      `📝 Izoh: ${comment || "—"}\n` +
-      `━━━━━━━━━━━━━━━━━━\n` +
-      `💰 Yangi qoldiq: ${newBalance.toLocaleString()} so'm`;
+    await ctx.reply(
+      t("debtSummary", lang, {
+        firm: firm.name,
+        type: debtLabel,
+        amount: amount.toLocaleString(),
+        comment: comment || "—",
+        balance: newBalance.toLocaleString(),
+      })
+    );
 
-    await ctx.reply(summary);
-
-    await ctx.reply("Yana qo'shasizmi?", {
-      reply_markup: addMoreKeyboard,
-    });
+    await ctx.reply(t("debtAddMore", lang), { reply_markup: getAddMoreKeyboard(lang) });
 
     const moreCtx = await conversation.waitForCallbackQuery(/^more_(yes|no)$/);
     await moreCtx.answerCallbackQuery();
 
     if (moreCtx.callbackQuery.data === "more_no") {
       addMore = false;
-      await moreCtx.editMessageText("✅ Saqlandi!");
+      await moreCtx.editMessageText(t("saved", lang));
     } else {
-      await moreCtx.editMessageText("✅ Saqlandi. Keyingisi...");
+      await moreCtx.editMessageText(t("incomeSavedNext", lang));
     }
   }
 
   const menu = await conversation.external(() => getMainMenuForUser(ctx.from!.id));
-  await ctx.reply("🏠 Asosiy menyu:", { reply_markup: menu });
+  await ctx.reply(t("mainMenu", lang), { reply_markup: menu });
 }
