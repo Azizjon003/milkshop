@@ -7,7 +7,7 @@ import {
   getAddMoreKeyboard,
   getCancelKeyboard,
 } from "../keyboards/main";
-import { t, Lang } from "../i18n";
+import { t, Lang, parseNum, fmtNum } from "../i18n";
 
 async function getFirmBalance(firmId: number): Promise<number> {
   const result = await prisma.debtTransaction.groupBy({
@@ -56,7 +56,7 @@ export async function debtConversation(
 
     const balance = await conversation.external(() => getFirmBalance(firmId));
     await firmCtx.editMessageText(
-      t("debtBalance", lang, { name: firm.name, balance: balance.toLocaleString() })
+      t("debtBalance", lang, { name: firm.name, balance: fmtNum(balance) })
     );
 
     await ctx.reply(t("debtChooseAction", lang), { reply_markup: getDebtTypeKeyboard(lang) });
@@ -78,7 +78,7 @@ export async function debtConversation(
         await ctx.reply(t("cancelled", lang), { reply_markup: menu });
         return;
       }
-      amount = parseFloat(amountCtx.message.text);
+      amount = parseNum(amountCtx.message.text);
       if (isNaN(amount) || amount <= 0) {
         await ctx.reply(t("invalidNumber", lang));
         continue;
@@ -116,9 +116,9 @@ export async function debtConversation(
       t("debtSummary", lang, {
         firm: firm.name,
         type: debtLabel,
-        amount: amount.toLocaleString(),
+        amount: fmtNum(amount),
         comment: comment || "—",
-        balance: newBalance.toLocaleString(),
+        balance: fmtNum(newBalance),
       })
     );
 

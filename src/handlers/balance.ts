@@ -2,7 +2,7 @@ import { Composer } from "grammy";
 import { MyContext } from "../types";
 import { prisma } from "../prisma";
 import { getMainMenuForUser } from "../keyboards/main";
-import { t, getUserLang } from "../i18n";
+import { t, getUserLang, fmtNum } from "../i18n";
 
 const composer = new Composer<MyContext>();
 
@@ -30,10 +30,10 @@ composer.hears(/^📊 /, async (ctx) => {
   const debtBalance = totalDebt - totalPayment;
 
   const text = t("balanceTitle", lang, {
-    income: income.toLocaleString(),
-    expense: expense.toLocaleString(),
-    balance: balance.toLocaleString(),
-    debt: debtBalance.toLocaleString(),
+    income: fmtNum(income),
+    expense: fmtNum(expense),
+    balance: fmtNum(balance),
+    debt: fmtNum(debtBalance),
   });
 
   const menu = await getMainMenuForUser(ctx.from!.id);

@@ -3,7 +3,7 @@ import { MyContext } from "../types";
 import { prisma } from "../prisma";
 import { getMainMenuForUser } from "../keyboards/main";
 import { generateReport } from "../utils/excel";
-import { t, getUserLang } from "../i18n";
+import { t, getUserLang, fmtNum } from "../i18n";
 import fs from "fs";
 
 const composer = new Composer<MyContext>();
@@ -67,7 +67,7 @@ composer.callbackQuery("report_today", async (ctx) => {
   for (const i of incomes) {
     const amt = Number(i.totalAmount);
     incomeTotal += amt;
-    incomeText += `  ${i.type.name}: ${Number(i.quantity)} ${i.type.unit} — ${amt.toLocaleString()}\n`;
+    incomeText += `  ${i.type.name}: ${Number(i.quantity)} ${i.type.unit} — ${fmtNum(amt)}\n`;
   }
 
   let expenseTotal = 0;
@@ -75,17 +75,17 @@ composer.callbackQuery("report_today", async (ctx) => {
   for (const e of expenses) {
     const amt = Number(e.amount);
     expenseTotal += amt;
-    expenseText += `  ${e.category.name}: ${amt.toLocaleString()}\n`;
+    expenseText += `  ${e.category.name}: ${fmtNum(amt)}\n`;
   }
 
   const text =
     `${t("reportToday", lang)}:\n━━━━━━━━━━━━━━━━━━\n` +
     `💰:\n${incomeText || t("noData", lang) + "\n"}` +
-    `${t("total", lang)}: ${incomeTotal.toLocaleString()}\n\n` +
+    `${t("total", lang)}: ${fmtNum(incomeTotal)}\n\n` +
     `📤:\n${expenseText || t("noData", lang) + "\n"}` +
-    `${t("total", lang)}: ${expenseTotal.toLocaleString()}\n` +
+    `${t("total", lang)}: ${fmtNum(expenseTotal)}\n` +
     `━━━━━━━━━━━━━━━━━━\n` +
-    `${t("profit", lang)}: ${(incomeTotal - expenseTotal).toLocaleString()}`;
+    `${t("profit", lang)}: ${fmtNum(incomeTotal - expenseTotal)}`;
 
   await ctx.reply(text, { reply_markup: await getMainMenuForUser(ctx.from!.id) });
 });
@@ -117,10 +117,10 @@ composer.callbackQuery("report_monthly", async (ctx) => {
 
   const text =
     `📆 ${monthNames[now.getMonth()]} ${now.getFullYear()}:\n━━━━━━━━━━━━━━━━━━\n` +
-    `💰 ${t("total", lang)}: ${income.toLocaleString()}\n` +
-    `📤 ${t("total", lang)}: ${expense.toLocaleString()}\n` +
+    `💰 ${t("total", lang)}: ${fmtNum(income)}\n` +
+    `📤 ${t("total", lang)}: ${fmtNum(expense)}\n` +
     `━━━━━━━━━━━━━━━━━━\n` +
-    `${t("profit", lang)}: ${(income - expense).toLocaleString()}`;
+    `${t("profit", lang)}: ${fmtNum(income - expense)}`;
 
   await ctx.reply(text, { reply_markup: await getMainMenuForUser(ctx.from!.id) });
 });
@@ -145,10 +145,10 @@ composer.callbackQuery("report_income", async (ctx) => {
     const sum = Number(r._sum.totalAmount) || 0;
     const qty = Number(r._sum.quantity) || 0;
     total += sum;
-    text += `${tp?.name}: ${qty} ${tp?.unit} — ${sum.toLocaleString()}\n`;
+    text += `${tp?.name}: ${qty} ${tp?.unit} — ${fmtNum(sum)}\n`;
   }
 
-  text += `━━━━━━━━━━━━━━━━━━\n${t("total", lang)}: ${total.toLocaleString()}`;
+  text += `━━━━━━━━━━━━━━━━━━\n${t("total", lang)}: ${fmtNum(total)}`;
   await ctx.reply(text, { reply_markup: await getMainMenuForUser(ctx.from!.id) });
 });
 
@@ -171,10 +171,10 @@ composer.callbackQuery("report_expense", async (ctx) => {
     const cat = catMap.get(r.categoryId);
     const sum = Number(r._sum.amount) || 0;
     total += sum;
-    text += `${cat?.name}: ${sum.toLocaleString()}\n`;
+    text += `${cat?.name}: ${fmtNum(sum)}\n`;
   }
 
-  text += `━━━━━━━━━━━━━━━━━━\n${t("total", lang)}: ${total.toLocaleString()}`;
+  text += `━━━━━━━━━━━━━━━━━━\n${t("total", lang)}: ${fmtNum(total)}`;
   await ctx.reply(text, { reply_markup: await getMainMenuForUser(ctx.from!.id) });
 });
 
@@ -203,12 +203,12 @@ composer.callbackQuery("report_debt", async (ctx) => {
     const balance = debts - payments;
     grandTotal += balance;
     if (balance !== 0) {
-      text += `${firm.name}: ${balance.toLocaleString()}\n`;
+      text += `${firm.name}: ${fmtNum(balance)}\n`;
     }
   }
 
   if (grandTotal === 0) text += t("noDebt", lang) + "\n";
-  text += `━━━━━━━━━━━━━━━━━━\n${t("totalDebt", lang)}: ${grandTotal.toLocaleString()}`;
+  text += `━━━━━━━━━━━━━━━━━━\n${t("totalDebt", lang)}: ${fmtNum(grandTotal)}`;
 
   await ctx.reply(text, { reply_markup: await getMainMenuForUser(ctx.from!.id) });
 });

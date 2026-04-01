@@ -363,6 +363,16 @@ export function t(key: string, lang: Lang, params?: Record<string, string | numb
   return text;
 }
 
+// Raqam parse qilish: "100,50" → 100.50 (vergul → nuqta)
+export function parseNum(text: string): number {
+  return parseFloat(text.replace(",", "."));
+}
+
+// Raqamni formatlash: 100.5 → "100,50"
+export function fmtNum(n: number): string {
+  return n.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 // Foydalanuvchi tilini olish
 export async function getUserLang(telegramId: number): Promise<Lang> {
   const user = await prisma.user.findUnique({

@@ -6,7 +6,7 @@ import {
   getAddMoreKeyboard,
   getCancelKeyboard,
 } from "../keyboards/main";
-import { t, Lang } from "../i18n";
+import { t, Lang, parseNum, fmtNum } from "../i18n";
 
 export async function incomeConversation(
   conversation: MyConversation,
@@ -52,7 +52,7 @@ export async function incomeConversation(
         await ctx.reply(t("cancelled", lang), { reply_markup: menu });
         return;
       }
-      quantity = parseFloat(qtyCtx.message.text);
+      quantity = parseNum(qtyCtx.message.text);
       if (isNaN(quantity) || quantity <= 0) {
         await ctx.reply(t("invalidNumber", lang));
         continue;
@@ -71,7 +71,7 @@ export async function incomeConversation(
         await ctx.reply(t("cancelled", lang), { reply_markup: menu });
         return;
       }
-      pricePerUnit = parseFloat(priceCtx.message.text);
+      pricePerUnit = parseNum(priceCtx.message.text);
       if (isNaN(pricePerUnit) || pricePerUnit <= 0) {
         await ctx.reply(t("invalidNumber", lang));
         continue;
@@ -86,8 +86,8 @@ export async function incomeConversation(
         type: incomeType.name,
         qty: quantity,
         unit: incomeType.unit,
-        price: pricePerUnit.toLocaleString(),
-        total: totalAmount.toLocaleString(),
+        price: fmtNum(pricePerUnit),
+        total: fmtNum(totalAmount),
       })
     );
 
