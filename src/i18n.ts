@@ -126,9 +126,9 @@ const translations: Record<string, Record<Lang, string>> = {
     tj: "💵 Нархи 1 {unit}-ро ворид кунед:",
   },
   incomeSummary: {
-    uz: "📋 Kirim ma'lumotlari:\n\n📦 Turi: {type}\n📊 Miqdor: {qty} {unit}\n💵 Narx (1 {unit}): {price} сомон\n💰 Jami: {total} сомон",
-    ru: "📋 Данные дохода:\n\n📦 Тип: {type}\n📊 Количество: {qty} {unit}\n💵 Цена (1 {unit}): {price} сомон\n💰 Итого: {total} сомон",
-    tj: "📋 Маълумоти даромад:\n\n📦 Навъ: {type}\n📊 Миқдор: {qty} {unit}\n💵 Нарх (1 {unit}): {price} сомон\n💰 Ҷамъ: {total} сомон",
+    uz: "📋 Kirim ma'lumotlari:\n\n📦 Turi: {type}\n📊 Miqdor: {qty} {unit}\n💵 Narx (1 {unit}): {price}\n💰 Jami: {total}",
+    ru: "📋 Данные дохода:\n\n📦 Тип: {type}\n📊 Количество: {qty} {unit}\n💵 Цена (1 {unit}): {price}\n💰 Итого: {total}",
+    tj: "📋 Маълумоти даромад:\n\n📦 Навъ: {type}\n📊 Миқдор: {qty} {unit}\n💵 Нарх (1 {unit}): {price}\n💰 Ҷамъ: {total}",
   },
   incomeSaved: {
     uz: "✅ Kirim saqlandi! Yana qo'shasizmi?",
@@ -159,7 +159,7 @@ const translations: Record<string, Record<Lang, string>> = {
   },
   expenseEnterAmount: {
     uz: "💰 Summa kiriting:",
-    ru: "💰 Введите сомонму:",
+    ru: "💰 Введите сумму:",
     tj: "💰 Маблағ ворид кунед:",
   },
   expenseEnterComment: {
@@ -168,9 +168,9 @@ const translations: Record<string, Record<Lang, string>> = {
     tj: "📝 Тавзеҳ ворид кунед (ё - барои гузаштан):",
   },
   expenseSummary: {
-    uz: "📋 Chiqim ma'lumotlari:\n\n📂 Kategoriya: {category}\n💰 Summa: {amount} сомон\n📝 Izoh: {comment}",
-    ru: "📋 Данные расхода:\n\n📂 Категория: {category}\n💰 Сумма: {amount} сомон\n📝 Комментарий: {comment}",
-    tj: "📋 Маълумоти хароҷот:\n\n📂 Категория: {category}\n💰 Маблағ: {amount} сомон\n📝 Тавзеҳ: {comment}",
+    uz: "📋 Chiqim ma'lumotlari:\n\n📂 Kategoriya: {category}\n💰 Summa: {amount}\n📝 Izoh: {comment}",
+    ru: "📋 Данные расхода:\n\n📂 Категория: {category}\n💰 Сумма: {amount}\n📝 Комментарий: {comment}",
+    tj: "📋 Маълумоти хароҷот:\n\n📂 Категория: {category}\n💰 Маблағ: {amount}\n📝 Тавзеҳ: {comment}",
   },
   expenseSaved: {
     uz: "✅ Chiqim saqlandi! Yana qo'shasizmi?",
@@ -195,9 +195,9 @@ const translations: Record<string, Record<Lang, string>> = {
     tj: "🏢 Фирмаро интихоб кунед:",
   },
   debtBalance: {
-    uz: "🏢 {name}\n💰 Qarz qoldig'i: {balance} сомон",
-    ru: "🏢 {name}\n💰 Остаток долга: {balance} сомон",
-    tj: "🏢 {name}\n💰 Боқимондаи қарз: {balance} сомон",
+    uz: "🏢 {name}\n💰 Qarz qoldig'i: {balance}",
+    ru: "🏢 {name}\n💰 Остаток долга: {balance}",
+    tj: "🏢 {name}\n💰 Боқимондаи қарз: {balance}",
   },
   debtChooseAction: {
     uz: "Nima qilasiz?",
@@ -215,9 +215,9 @@ const translations: Record<string, Record<Lang, string>> = {
     tj: "➖ Қарз пардохт",
   },
   debtSummary: {
-    uz: "📋 Qarz ma'lumotlari:\n\n🏢 Firma: {firm}\n📌 Turi: {type}\n💰 Summa: {amount} сомон\n📝 Izoh: {comment}\n━━━━━━━━━━━━━━━━━━\n💰 Yangi qoldiq: {balance} сомон",
-    ru: "📋 Данные долга:\n\n🏢 Фирма: {firm}\n📌 Тип: {type}\n💰 Сумма: {amount} сомон\n📝 Комментарий: {comment}\n━━━━━━━━━━━━━━━━━━\n💰 Новый остаток: {balance} сомон",
-    tj: "📋 Маълумоти қарз:\n\n🏢 Фирма: {firm}\n📌 Навъ: {type}\n💰 Маблағ: {amount} сомон\n📝 Тавзеҳ: {comment}\n━━━━━━━━━━━━━━━━━━\n💰 Боқимондаи нав: {balance} сомон",
+    uz: "📋 Qarz ma'lumotlari:\n\n🏢 Firma: {firm}\n📌 Turi: {type}\n💰 Summa: {amount}\n📝 Izoh: {comment}\n━━━━━━━━━━━━━━━━━━\n💰 Yangi qoldiq: {balance}",
+    ru: "📋 Данные долга:\n\n🏢 Фирма: {firm}\n📌 Тип: {type}\n💰 Сумма: {amount}\n📝 Комментарий: {comment}\n━━━━━━━━━━━━━━━━━━\n💰 Новый остаток: {balance}",
+    tj: "📋 Маълумоти қарз:\n\n🏢 Фирма: {firm}\n📌 Навъ: {type}\n💰 Маблағ: {amount}\n📝 Тавзеҳ: {comment}\n━━━━━━━━━━━━━━━━━━\n💰 Боқимондаи нав: {balance}",
   },
   debtAddMore: {
     uz: "Yana qo'shasizmi?",
@@ -232,9 +232,9 @@ const translations: Record<string, Record<Lang, string>> = {
 
   // ===== BALANS =====
   balanceTitle: {
-    uz: "📊 Umumiy balans:\n━━━━━━━━━━━━━━━━━━\n💰 Jami kirim: {income} сомон\n📤 Jami chiqim: {expense} сомон\n━━━━━━━━━━━━━━━━━━\n💵 Balans: {balance} сомон\n━━━━━━━━━━━━━━━━━━\n📋 Jami qarz qoldig'i: {debt} сомон",
-    ru: "📊 Общий баланс:\n━━━━━━━━━━━━━━━━━━\n💰 Общий доход: {income} сомон\n📤 Общий расход: {expense} сомон\n━━━━━━━━━━━━━━━━━━\n💵 Баланс: {balance} сомон\n━━━━━━━━━━━━━━━━━━\n📋 Общий остаток долга: {debt} сомон",
-    tj: "📊 Баланси умумӣ:\n━━━━━━━━━━━━━━━━━━\n💰 Ҷамъи даромад: {income} сомон\n📤 Ҷамъи хароҷот: {expense} сомон\n━━━━━━━━━━━━━━━━━━\n💵 Баланс: {balance} сомон\n━━━━━━━━━━━━━━━━━━\n📋 Ҷамъи боқимондаи қарз: {debt} сомон",
+    uz: "📊 Umumiy balans:\n━━━━━━━━━━━━━━━━━━\n💰 Jami kirim: {income}\n📤 Jami chiqim: {expense}\n━━━━━━━━━━━━━━━━━━\n💵 Balans: {balance}\n━━━━━━━━━━━━━━━━━━\n📋 Jami qarz qoldig'i: {debt}",
+    ru: "📊 Общий баланс:\n━━━━━━━━━━━━━━━━━━\n💰 Общий доход: {income}\n📤 Общий расход: {expense}\n━━━━━━━━━━━━━━━━━━\n💵 Баланс: {balance}\n━━━━━━━━━━━━━━━━━━\n📋 Общий остаток долга: {debt}",
+    tj: "📊 Баланси умумӣ:\n━━━━━━━━━━━━━━━━━━\n💰 Ҷамъи даромад: {income}\n📤 Ҷамъи хароҷот: {expense}\n━━━━━━━━━━━━━━━━━━\n💵 Баланс: {balance}\n━━━━━━━━━━━━━━━━━━\n📋 Ҷамъи боқимондаи қарз: {debt}",
   },
 
   // ===== HISOBOTLAR =====
@@ -368,9 +368,9 @@ export function parseNum(text: string): number {
   return parseFloat(text.replace(",", "."));
 }
 
-// Raqamni formatlash: 100.5 → "100,50"
+// Raqamni formatlash: 100.5 → "100,50 сомон"
 export function fmtNum(n: number): string {
-  return n.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return n.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " сомон";
 }
 
 // Foydalanuvchi tilini olish
