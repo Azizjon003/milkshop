@@ -14,13 +14,13 @@ async function main() {
     { name: "Investitsiya kirimi", unit: "dona" },
   ];
 
-  for (const type of incomeTypes) {
-    await prisma.incomeType.upsert({
-      where: { id: incomeTypes.indexOf(type) + 1 },
-      update: {},
-      create: type,
-    });
-  }
+  // for (const type of incomeTypes) {
+  //   await prisma.incomeType.upsert({
+  //     where: { id: incomeTypes.indexOf(type) + 1 },
+  //     update: {},
+  //     create: type,
+  //   });
+  // }
 
   // Chiqim kategoriyalari
   const expenseCategories = [
@@ -34,13 +34,13 @@ async function main() {
     "Boshqa xarajatlar",
   ];
 
-  for (const name of expenseCategories) {
-    await prisma.expenseCategory.upsert({
-      where: { id: expenseCategories.indexOf(name) + 1 },
-      update: {},
-      create: { name },
-    });
-  }
+  // for (const name of expenseCategories) {
+  //   await prisma.expenseCategory.upsert({
+  //     where: { id: expenseCategories.indexOf(name) + 1 },
+  //     update: {},
+  //     create: { name },
+  //   });
+  // }
 
   // Firmalar
   const firms = [
@@ -54,13 +54,13 @@ async function main() {
     "Boshqa qarzlar",
   ];
 
-  for (const name of firms) {
-    await prisma.firm.upsert({
-      where: { id: firms.indexOf(name) + 1 },
-      update: {},
-      create: { name },
-    });
-  }
+  // for (const name of firms) {
+  //   await prisma.firm.upsert({
+  //     where: { id: firms.indexOf(name) + 1 },
+  //     update: {},
+  //     create: { name },
+  //   });
+  // }
 
   // Super adminlar
   const superAdmins = [
