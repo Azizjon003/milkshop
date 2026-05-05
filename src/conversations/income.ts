@@ -20,6 +20,17 @@ export async function incomeConversation(
   let addMore = true;
 
   while (addMore) {
+    const types = await conversation.external(() =>
+      prisma.incomeType.findMany({ orderBy: { id: "asc" } })
+    );
+    if (types.length === 0) {
+      const menu = await conversation.external(() => getMainMenuForUser(ctx.from!.id));
+      await ctx.reply(
+        "⚠️ Kirim turlari hali qo'shilmagan. Admin paneldan qo'shing.",
+        { reply_markup: menu }
+      );
+      return;
+    }
     const incomeTypesKb = await conversation.external(() => getIncomeTypesKeyboard());
     await ctx.reply(t("incomeSelectType", lang), { reply_markup: incomeTypesKb });
 

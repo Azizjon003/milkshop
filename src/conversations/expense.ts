@@ -20,6 +20,17 @@ export async function expenseConversation(
   let addMore = true;
 
   while (addMore) {
+    const cats = await conversation.external(() =>
+      prisma.expenseCategory.findMany({ orderBy: { id: "asc" } })
+    );
+    if (cats.length === 0) {
+      const menu = await conversation.external(() => getMainMenuForUser(ctx.from!.id));
+      await ctx.reply(
+        "⚠️ Chiqim kategoriyalari hali qo'shilmagan. Admin paneldan qo'shing.",
+        { reply_markup: menu }
+      );
+      return;
+    }
     const expenseCatsKb = await conversation.external(() => getExpenseCategoriesKeyboard());
     await ctx.reply(t("expenseSelectCat", lang), { reply_markup: expenseCatsKb });
 

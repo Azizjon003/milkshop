@@ -24,27 +24,18 @@ bot.use(
 
 bot.use(conversations());
 
-// Barcha tildagi menyu tugmalari
-const allMenuTexts = [
-  // UZ
-  "💰 Kirim qo'shish", "📤 Chiqim qo'shish", "📋 Qarzlar",
-  "📊 Balans", "📈 Hisobotlar", "⚙️ Admin panel",
-  "🏠 Bosh menyu", "🌐 Til",
-  // RU
-  "💰 Добавить доход", "📤 Добавить расход", "📋 Долги",
-  "📊 Баланс", "📈 Отчёты", "⚙️ Админ панель",
-  "🏠 Главное меню", "🌐 Язык",
-  // TJ
-  "💰 Даромад илова", "📤 Хароҷот илова", "📋 Қарзҳо",
-  "📊 Баланс", "📈 Ҳисоботҳо", "⚙️ Админ панел",
-  "🏠 Менюи асосӣ", "🌐 Забон",
-];
+// Asosiy menyu tugmalari emoji prefiksi bilan boshlanadi.
+// Conversation ichida bo'lsak ham, foydalanuvchi menyu tugmasini bossa, conversation tugatiladi.
+const MENU_PREFIX_RE = /^(\/start|\/help|💰|📤|📋|📊|📈|⚙️?|🏠|🌐)(\s|$)/;
 
-// Menyu tugmalari bosilganda aktiv conversationni to'xtatish
 bot.use(async (ctx, next) => {
   const text = ctx.message?.text;
-  if (text && (text === "/start" || allMenuTexts.includes(text))) {
-    await ctx.conversation.exitAll();
+  if (text && MENU_PREFIX_RE.test(text)) {
+    try {
+      await ctx.conversation.exitAll();
+    } catch (e) {
+      console.error("exitAll xatosi:", e);
+    }
   }
   await next();
 });
@@ -119,11 +110,26 @@ bot.hears(/^⚙️ /, requirePermission("isSuperAdmin"), async (ctx) => {
 bot.use(balanceHandler);
 bot.use(reportsHandler);
 
-bot.catch((err) => {
-  console.error("Bot xatosi:", err);
+bot.catch(async (err) => {
+  console.error("Bot xatosi:", err.error);
+  console.error("Update:", JSON.stringify(err.ctx.update, null, 2));
+  try {
+    await err.ctx.conversation.exitAll();
+  } catch {}
+  try {
+    const lang = await getUserLang(err.ctx.from!.id);
+    const menu = await getMainMenuForUser(err.ctx.from!.id);
+    await err.ctx.reply(
+      "⚠️ Botda kutilmagan xatolik yuz berdi. Iltimos, qaytadan urinib ko'ring yoki 🏠 Bosh menyu tugmasini bosing.",
+      { reply_markup: menu }
+    );
+  } catch (e) {
+    console.error("Foydalanuvchini xabardor qilishda xato:", e);
+  }
 });
 
 bot.start({
+  drop_pending_updates: true,
   onStart: () => {
     console.log("✅ Bot ishga tushdi!");
   },

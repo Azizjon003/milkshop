@@ -37,6 +37,17 @@ export async function debtConversation(
   let addMore = true;
 
   while (addMore) {
+    const firms = await conversation.external(() =>
+      prisma.firm.findMany({ orderBy: { id: "asc" } })
+    );
+    if (firms.length === 0) {
+      const menu = await conversation.external(() => getMainMenuForUser(ctx.from!.id));
+      await ctx.reply(
+        "⚠️ Firmalar hali qo'shilmagan. Admin paneldan qo'shing.",
+        { reply_markup: menu }
+      );
+      return;
+    }
     const firmsKb = await conversation.external(() => getFirmsKeyboard());
     await ctx.reply(t("debtSelectFirm", lang), { reply_markup: firmsKb });
 
